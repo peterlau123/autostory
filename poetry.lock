@@ -1020,14 +1020,14 @@ setuptools = "*"
 
 [[package]]
 name = "setuptools"
-version = "77.0.3"
+version = "80.8.0"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
 optional = false
 python-versions = ">=3.9"
 groups = ["dev"]
 files = [
-    {file = "setuptools-77.0.3-py3-none-any.whl", hash = "sha256:67122e78221da5cf550ddd04cf8742c8fe12094483749a792d56cd669d6cf58c"},
-    {file = "setuptools-77.0.3.tar.gz", hash = "sha256:583b361c8da8de57403743e756609670de6fb2345920e36dc5c2d914c319c945"},
+    {file = "setuptools-80.8.0-py3-none-any.whl", hash = "sha256:95a60484590d24103af13b686121328cc2736bee85de8936383111e421b9edc0"},
+    {file = "setuptools-80.8.0.tar.gz", hash = "sha256:49f7af965996f26d43c8ae34539c8d99c5042fbff34302ea151eaa9c207cd257"},
 ]
 
 [package.extras]
