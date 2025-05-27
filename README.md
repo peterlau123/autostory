@@ -18,6 +18,12 @@ Awesome `autostory` is a Python cli/package created with https://github.com/TezR
 
 </div>
 
+## What it does
+
+- [x] Generate a story
+- [x] Generate a scene
+- [x] Generate a character
+
 ## Very first steps
 
 ### Initialize your code
