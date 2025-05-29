@@ -1,0 +1,3 @@
+huggingface_hub[inference]
+Pillow
+langchain==0.3.25
