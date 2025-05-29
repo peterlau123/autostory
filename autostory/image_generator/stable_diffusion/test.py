@@ -3,7 +3,7 @@ from PIL import Image
 
 client = InferenceClient(
     provider="hf-inference",
-    api_key="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",
+    api_key="hf_xxxxxxxx",
 )
 
 # output is a PIL.Image object
