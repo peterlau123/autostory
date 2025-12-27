@@ -54,9 +54,18 @@ make pre-commit-install
 
 To activate your `virtualenv` run `poetry shell`.
 
-## Codestyle
+## Code Formatting
 
-After installation you may execute code formatting.
+We use **Black** as the primary Python code formatter with a line length of 88 characters.
+
+### Auto-formatting
+
+Pre-commit hooks automatically format your code before each commit using:
+- **Black**: Code formatting
+- **isort**: Import sorting
+- **pyupgrade**: Python syntax upgrades
+
+To manually format code:
 
 ```bash
 make codestyle
@@ -67,7 +76,7 @@ make codestyle
 Many checks are configured for this project. Command `make check-codestyle` will check black, isort and darglint.
 The `make check-safety` command will look at the security of your code.
 
-Comand `make lint` applies all checks.
+Command `make lint` applies all checks.
 
 ### Before submitting
 
