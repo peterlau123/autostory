@@ -1,5 +1,45 @@
 # How to contribute
 
+## Branch Naming Convention
+
+Please use the following branch naming convention:
+
+- `feature/<description>` - for new features
+- `bugfix/<description>` - for bug fixes
+- `hotfix/<description>` - for critical fixes to production
+- `refactor/<description>` - for code refactoring
+- `docs/<description>` - for documentation changes
+
+Example: `feature/add-user-authentication`
+
+## Commit Message Convention
+
+We follow [Conventional Commits](https://conventionalcommits.org/) specification.
+
+Format: `<type>(<scope>): <description>`
+
+### Types:
+- `feat`: A new feature
+- `fix`: A bug fix
+- `docs`: Documentation only changes
+- `style`: Changes that do not affect the meaning of the code (white-space, formatting, etc)
+- `refactor`: A code change that neither fixes a bug nor adds a feature
+- `perf`: A code change that improves performance
+- `test`: Adding missing tests or correcting existing tests
+- `build`: Changes that affect the build system or external dependencies
+- `ci`: Changes to our CI configuration files and scripts
+- `chore`: Other changes that don't modify src or test files
+
+### Examples:
+- `feat: add user authentication`
+- `fix: resolve login timeout issue`
+- `docs: update API documentation`
+
+### Breaking Changes:
+Append `!` after type/scope: `feat!: change API response format`
+
+Pre-commit hooks will validate commit messages automatically.
+
 ## Dependencies
 
 We use `poetry` to manage the [dependencies](https://github.com/python-poetry/poetry).
