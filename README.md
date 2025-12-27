@@ -1,5 +1,18 @@
 # autostory
+
 An agent that does play writing, scene generation and story orchestration
+
++ play writing
+
+write and refine play, essay or noval
+
++ scene generation
+
+image and video generation
+
++ story orchestration
+
+reorganise the materials above
 
 <div align="center">
 
