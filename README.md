@@ -39,6 +39,11 @@ Awesome `autostory` is a Python cli/package created with https://github.com/TezR
 
 ```bash
 cd autostory && git init
+
+conda create -n autostory python=3.10
+conda activate autostory
+pip installl uv
+uv pip install requirements.txt
 ```
 
 2. If you don't have `Poetry` installed run:
