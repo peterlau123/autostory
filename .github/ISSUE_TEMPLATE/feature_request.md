@@ -1,9 +1,10 @@
 ---
-name: 🚀 Feature request
-about: Suggest an idea for this project 🏖
+name: "\U0001F680 Feature request"
+about: "Suggest an idea for this project \U0001F3D6"
 title: ''
 labels: enhancement
-assignees:
+assignees: ''
+
 ---
 
 ## 🚀 Feature Request
