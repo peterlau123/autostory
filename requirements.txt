@@ -7,3 +7,5 @@ python-dotenv
 azure-cognitiveservices-speech
 volcengine
 volcengine-python-sdk
+typer
+rich
