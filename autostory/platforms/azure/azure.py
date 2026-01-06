@@ -22,7 +22,6 @@ import sys
 from typing import Optional
 
 try:
-    import azure.cognitiveservices.speech as speechsdk
     AZURE_SDK_AVAILABLE = True
 except ImportError:
     AZURE_SDK_AVAILABLE = False
