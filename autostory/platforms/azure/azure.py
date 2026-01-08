@@ -21,8 +21,9 @@ import os
 import sys
 from typing import Optional
 
+from .. import get_access_config
+
 try:
-    import azure.cognitiveservices.speech as speechsdk
     AZURE_SDK_AVAILABLE = True
 except ImportError:
     AZURE_SDK_AVAILABLE = False
@@ -41,8 +42,8 @@ class AzureVoice:
         Initialize Azure Voice instance.
 
         Args:
-            key: Azure Speech resource key. If None, uses SPEECH_KEY environment variable.
-            endpoint: Azure Speech endpoint URL. If None, uses ENDPOINT environment variable.
+            key: Azure Speech resource key. If None, uses access configuration.
+            endpoint: Azure Speech endpoint URL. If None, uses access configuration.
         """
         if not AZURE_SDK_AVAILABLE:
             raise ImportError(
@@ -50,18 +51,20 @@ class AzureVoice:
                 "Install it with: pip install azure-cognitiveservices-speech"
             )
 
-        self.key = key or os.environ.get('SPEECH_KEY')
-        self.endpoint = endpoint or os.environ.get('ENDPOINT')
+        if key is None or endpoint is None:
+            # Get configuration using the access config system
+            config = get_access_config('azure')
+            self.key = key or config['speech_key']
+            self.endpoint = endpoint or config['endpoint']
+        else:
+            self.key = key
+            self.endpoint = endpoint
 
         if not self.key:
-            raise ValueError(
-                "Azure Speech key is required. Set SPEECH_KEY environment variable or pass key parameter."
-            )
+            raise ValueError("Azure Speech key is required.")
 
         if not self.endpoint:
-            raise ValueError(
-                "Azure Speech endpoint is required. Set ENDPOINT environment variable or pass endpoint parameter."
-            )
+            raise ValueError("Azure Speech endpoint is required.")
 
     def synthesize(
         self,

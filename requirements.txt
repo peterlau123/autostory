@@ -5,3 +5,7 @@ langgraph==0.2.20
 langserve==0.3.0
 python-dotenv
 azure-cognitiveservices-speech
+volcengine
+volcengine-python-sdk
+typer
+rich
