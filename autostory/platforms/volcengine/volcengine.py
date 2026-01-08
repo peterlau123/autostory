@@ -17,6 +17,8 @@ import json
 from typing import Optional, List, Dict, Any
 from volcengine.visual.VisualService import VisualService
 
+from .. import get_access_config
+
 
 class VolcengineImageGenerator:
     """
@@ -25,19 +27,26 @@ class VolcengineImageGenerator:
     Handles text-to-image generation using Volcengine Jimeng API.
     """
 
-    def __init__(self, access_key_id: str, secret_key: str):
+    def __init__(self, access_key_id: Optional[str] = None, secret_key: Optional[str] = None):
         """
         Initialize Volcengine Image Generator instance.
 
         Args:
-            access_key_id: Volcengine access key ID
-            secret_key: Volcengine secret key
+            access_key_id: Volcengine access key ID. If None, uses access configuration.
+            secret_key: Volcengine secret key. If None, uses access configuration.
         """
-        self.access_key_id = access_key_id
-        self.secret_key = secret_key
+        if access_key_id is None or secret_key is None:
+            # Get configuration using the access config system
+            config = get_access_config('volcengine')
+            self.access_key_id = access_key_id or config['access_key_id']
+            self.secret_key = secret_key or config['secret_key']
+        else:
+            self.access_key_id = access_key_id
+            self.secret_key = secret_key
+
         self.visual_service = VisualService()
-        self.visual_service.set_ak(access_key_id)
-        self.visual_service.set_sk(secret_key)
+        self.visual_service.set_ak(self.access_key_id)
+        self.visual_service.set_sk(self.secret_key)
 
     @staticmethod
     def fix_dimension(width: int = 1024, height: int = 1024) -> tuple[int, int]:

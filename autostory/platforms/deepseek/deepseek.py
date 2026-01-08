@@ -1,7 +1,24 @@
 import os
+from .. import get_access_config
 
 
 class DeepSeekApi:
-    def get_key(self):
-        api_key=os.environ['DEEP_SEEK_API_KEY'] # DEEP_SEEK_API_KEY=sk-e9d9c2f2f9a04b3fa2f25188e81e62e1
-        return api_key
+    """
+    DeepSeek API integration class.
+    """
+
+    def __init__(self):
+        """
+        Initialize DeepSeek API with access configuration.
+        """
+        config = get_access_config('deepseek')
+        self.api_key = config['api_key']
+
+    def get_key(self) -> str:
+        """
+        Get the API key for DeepSeek.
+
+        Returns:
+            str: The API key
+        """
+        return self.api_key
