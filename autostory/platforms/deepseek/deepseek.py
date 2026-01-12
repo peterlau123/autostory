@@ -89,7 +89,7 @@ class DeepSeekApi(Platform):
             return f"DeepSeek response to: {input_data} (API not configured)"
 
         # Extract parameters with defaults
-        model = kwargs.get('model', 'deepseek-chat')
+        model = kwargs.get('model', 'deepseek-chat')# TODO: deepseek-chat or deepseek-reasoner
         temperature = kwargs.get('temperature', 0.7)
         max_tokens = kwargs.get('max_tokens', 2000)
         stream = kwargs.get('stream', False)
