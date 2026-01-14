@@ -71,7 +71,7 @@ class JimengImageGenerator:
         Generate images from text input.
 
         Args:
-            input_data: Text prompt for image generation
+            input_data: Text jimeng_play_writer for image generation
             width: Desired image width
             height: Desired image height
             **kwargs: Additional parameters
@@ -93,10 +93,10 @@ class JimengImageGenerator:
         polling_interval: int = 4
     ) -> Dict[str, Any]:
         """
-        Generate images from text prompt (backward compatibility).
+        Generate images from text jimeng_play_writer (backward compatibility).
 
         Args:
-            prompt: Text prompt for image generation
+            prompt: Text jimeng_play_writer for image generation
             width: Desired image width
             height: Desired image height
             force_single: Whether to force single image generation
@@ -116,7 +116,7 @@ class JimengImageGenerator:
         # Build request parameters
         submit_params = {
             "req_key": "jimeng_t2i_v40",
-            "prompt": prompt,
+            "jimeng_play_writer": prompt,
             "width": fixed_width,
             "height": fixed_height,
             "force_single": force_single

@@ -39,7 +39,7 @@ class QwenApi(Platform):
         Generate text using Qwen API.
 
         Args:
-            input_data: Input prompt/text
+            input_data: Input jimeng_play_writer/text
             **kwargs: Additional parameters
 
         Returns:
@@ -67,7 +67,7 @@ class QwenApi(Platform):
         Generate text using Qwen API (backward compatibility).
 
         Args:
-            prompt: Input prompt
+            prompt: Input jimeng_play_writer
             **kwargs: Additional parameters
 
         Returns:

@@ -26,7 +26,7 @@ class TestDeepSeekApi(unittest.TestCase):
         self.assertEqual(messages, expected)
 
     def test_parse_input_with_system_prompt(self):
-        """Test parsing input with separate system prompt."""
+        """Test parsing input with separate system jimeng_play_writer."""
         messages = self.api._parse_input_to_messages(
             "Hello world",
             system_prompt="You are a helpful assistant"
@@ -48,9 +48,9 @@ class TestDeepSeekApi(unittest.TestCase):
 
     def test_generate_without_api_configured(self):
         """Test generate method when API is not configured."""
-        result = self.api.generate("Test prompt")
+        result = self.api.generate("Test jimeng_play_writer")
         self.assertIn("API not configured", result)
-        self.assertIn("Test prompt", result)
+        self.assertIn("Test jimeng_play_writer", result)
 
     def test_generate_with_messages_list(self):
         """Test generate method with messages list input."""
@@ -65,7 +65,7 @@ class TestDeepSeekApi(unittest.TestCase):
 
     def test_generate_text_backward_compatibility(self):
         """Test backward compatibility of generate_text method."""
-        result = self.api.generate_text("Test prompt")
+        result = self.api.generate_text("Test jimeng_play_writer")
         # Should call generate method internally
         self.assertIn("API not configured", result)
 

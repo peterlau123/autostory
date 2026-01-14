@@ -6,7 +6,7 @@ This script provides a unified interface for image generation across different p
 It automatically discovers available image generation platforms and allows users to select which one to use.
 
 Example usage:
-    python -m autostory.image_generate --platform volcengine --prompt "A beautiful landscape"
+    python -m autostory.image_generate --platform volcengine --jimeng_play_writer "A beautiful landscape"
     python -m autostory.image_generate --list-platforms
 """
 
@@ -113,7 +113,7 @@ def create_parser():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s --platform volcengine --prompt "A beautiful landscape" --access-key YOUR_KEY --secret-key YOUR_SECRET
+  %(prog)s --platform volcengine --jimeng_play_writer "A beautiful landscape" --access-key YOUR_KEY --secret-key YOUR_SECRET
   %(prog)s --list-platforms
   %(prog)s --platform-info volcengine
 
@@ -142,9 +142,9 @@ Environment Variables:
     )
 
     parser.add_argument(
-        '--prompt',
+        '--jimeng_play_writer',
         type=str,
-        help='Text prompt for image generation'
+        help='Text jimeng_play_writer for image generation'
     )
 
     parser.add_argument(
@@ -299,9 +299,9 @@ def main():
         print("Provide them via command line options or environment variables", file=sys.stderr)
         sys.exit(1)
 
-    # Check if prompt is provided
+    # Check if jimeng_play_writer is provided
     if not args.prompt:
-        print("Error: Please provide a prompt with --prompt", file=sys.stderr)
+        print("Error: Please provide a jimeng_play_writer with --jimeng_play_writer", file=sys.stderr)
         sys.exit(1)
 
     try:
@@ -313,7 +313,7 @@ def main():
         processed_ref_images = args.ref_image or []
 
         # Generate the image
-        print(f"Generating image with prompt: '{args.prompt}'")
+        print(f"Generating image with jimeng_play_writer: '{args.prompt}'")
         if processed_ref_images:
             print(f"Using {len(processed_ref_images)} reference image(s)")
 

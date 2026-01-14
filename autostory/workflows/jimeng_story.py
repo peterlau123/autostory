@@ -10,11 +10,12 @@ Workflow Steps:
 2. Playcritic reviews and critiques the play
 3. If approved: proceed to image generation
 4. If not approved: Playwriter revises and loop continues
-5. Approved play goes to JimengPrompter for image prompt generation
+5. Approved play goes to JimengPrompter for image jimeng_play_writer generation
 6. Generated prompts go to JimengImageGenerator for final images
 """
 
 from typing import TypedDict, List, Dict, Any, Optional
+import argparse
 from langgraph.graph import StateGraph, END
 from langchain_core.runnables import RunnableConfig
 
@@ -25,6 +26,7 @@ from ..agents.jimeng_image_generator import JimengImageGenerator
 from ..platforms.deepseek import DeepSeekApi
 from ..platforms.volcengine import Volcengine
 
+from utils import PromptReader
 
 class WorkflowState(TypedDict):
     """State structure for the Jimeng story workflow."""
@@ -78,21 +80,21 @@ class JimengStoryWorkflow:
     def _init_agents(self):
         """Initialize all agents with appropriate configurations."""
         # Playwriter agent
-        playwriter_prompt = "You are a professional playwright. Create engaging, dramatic plays based on the user's input. Focus on compelling characters, conflict, and vivid scenes suitable for visual adaptation."
+        playwriter_prompt = PromptReader('autostory/prompts/jimeng_play_writer').read()
         self.playwriter = Playwriter(
             platform=self.text_platform,
             system_prompt=playwriter_prompt
         )
 
         # Playcritic agent
-        critic_prompt = "You are a professional play critic. Analyze plays for dramatic quality, character development, pacing, and visual potential. Provide constructive feedback and clearly state whether the play is ready for production or needs revision."
+        critic_prompt = PromptReader('autostory/prompts/jimeng_play_critic').read()
         self.playcritic = PlayCritic(
             platform=self.text_platform,
             system_prompt=critic_prompt
         )
 
         # Jimeng prompter agent
-        prompter_prompt = "You are an expert at creating detailed image prompts for AI art generation, specialized in traditional Chinese aesthetics and dramatic scenes."
+        prompter_prompt = PromptReader('autostory/prompts/jimeng_image_prompter').read()
         self.jimeng_prompter = JimengPrompter(
             platform=self.text_platform,
             system_prompt=prompter_prompt
@@ -275,7 +277,7 @@ Please create an improved version addressing the critique points."""
         Run the complete workflow.
 
         Args:
-            user_input: The user's story prompt
+            user_input: The user's story jimeng_play_writer
             reference_images: Optional list of reference image URLs
 
         Returns:
@@ -328,7 +330,7 @@ def generate_jimeng_story(user_input: str, reference_images: Optional[List[str]]
     Generate a complete story with images using the Jimeng workflow.
 
     Args:
-        user_input: The user's story prompt
+        user_input: The user's story jimeng_play_writer
         reference_images: Optional list of reference image URLs
         config: Optional workflow configuration
 
@@ -339,51 +341,106 @@ def generate_jimeng_story(user_input: str, reference_images: Optional[List[str]]
     return workflow.run(user_input, reference_images)
 
 
-# Example usage
-if __name__ == "__main__":
-    # Example: Generate a story about a historical event
-    user_input = "Create a play about the famous Battle of Red Cliffs during the Three Kingdoms period in ancient China"
+def main():
+    """CLI entry point for the Jimeng Story Workflow."""
+    parser = argparse.ArgumentParser(
+        description="Generate stories with images using the Jimeng workflow",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python jimeng_story.py "Create a play about the Battle of Red Cliffs"
+  python jimeng_story.py "Tell a story about ancient Chinese warriors" --images "https://example.com/warrior.jpg"
+  python jimeng_story.py "Historical drama" --max-revisions 5
+        """
+    )
 
-    reference_images = [
-        # Optional: Add reference images
-        # "https://example.com/historical-battle-reference.jpg"
-    ]
+    parser.add_argument(
+        "user_input",
+        help="The story prompt or description"
+    )
 
-    print("🎭 Starting Jimeng Story Generation Workflow")
-    print("=" * 60)
-    print(f"Prompt: {user_input}")
-    print()
+    parser.add_argument(
+        "--images", "-i",
+        nargs="*",
+        default=[],
+        help="Reference image URLs (can specify multiple)"
+    )
 
-    # Run the workflow
-    result = generate_jimeng_story(user_input, reference_images)
+    parser.add_argument(
+        "--max-revisions", "-r",
+        type=int,
+        default=3,
+        help="Maximum number of revisions allowed (default: 3)"
+    )
 
-    if result["success"]:
-        print("✅ Workflow completed successfully!")
-        print(f"📝 Final Play ({result['revisions']} revisions):")
-        print("-" * 40)
-        print(result["play"][:500] + "..." if len(result["play"]) > 500 else result["play"])
+    parser.add_argument(
+        "--quiet", "-q",
+        action="store_true",
+        help="Suppress verbose output"
+    )
+
+    args = parser.parse_args()
+
+    # Prepare configuration
+    config = {
+        "max_revisions": args.max_revisions
+    }
+
+    if not args.quiet:
+        print("🎭 Starting Jimeng Story Generation Workflow")
+        print("=" * 60)
+        print(f"Prompt: {args.user_input}")
+        if args.images:
+            print(f"Reference Images: {len(args.images)} provided")
         print()
 
-        if result["critique"]:
-            print(f"🎭 Final Critique:")
-            print(result["critique"][:300] + "..." if len(result["critique"]) > 300 else result["critique"])
+    # Run the workflow
+    result = generate_jimeng_story(args.user_input, args.images, config)
+
+    if result["success"]:
+        if not args.quiet:
+            print("✅ Workflow completed successfully!")
+            print(f"📝 Final Play ({result['revisions']} revisions):")
+            print("-" * 40)
+            print(result["play"][:500] + "..." if len(result["play"]) > 500 else result["play"])
             print()
 
-        if result["image_prompts"]:
-            print(f"🎨 Generated {len(result['image_prompts'])} Image Prompts:")
-            for i, prompt in enumerate(result["image_prompts"], 1):
-                print(f"  {i}. {prompt[:100]}...")
-            print()
+            if result["critique"]:
+                print(f"🎭 Final Critique:")
+                print(result["critique"][:300] + "..." if len(result["critique"]) > 300 else result["critique"])
+                print()
 
-        if result["generated_images"]:
-            print(f"🖼️  Generated {len(result['generated_images'])} Images:")
-            for i, url in enumerate(result["generated_images"], 1):
-                print(f"  {i}. {url}")
-            print()
+            if result["image_prompts"]:
+                print(f"🎨 Generated {len(result['image_prompts'])} Image Prompts:")
+                for i, prompt in enumerate(result["image_prompts"], 1):
+                    print(f"  {i}. {prompt[:100]}...")
+                print()
 
-        if result["task_ids"]:
-            print(f"📋 Task IDs: {result['task_ids']}")
+            if result["generated_images"]:
+                print(f"🖼️  Generated {len(result['generated_images'])} Images:")
+                for i, url in enumerate(result["generated_images"], 1):
+                    print(f"  {i}. {url}")
+                print()
+
+            if result["task_ids"]:
+                print(f"📋 Task IDs: {result['task_ids']}")
+        else:
+            # Quiet mode: just print summary
+            print(f"Success: Generated play with {result['revisions']} revisions")
+            if result["generated_images"]:
+                print(f"Generated {len(result['generated_images'])} images")
 
     else:
-        print(f"❌ Workflow failed: {result.get('error', 'Unknown error')}")
-        print(f"📊 Final status: {result.get('status', 'unknown')}")
+        error_msg = result.get('error', 'Unknown error')
+        if args.quiet:
+            print(f"Failed: {error_msg}")
+        else:
+            print(f"❌ Workflow failed: {error_msg}")
+            print(f"📊 Final status: {result.get('status', 'unknown')}")
+        return 1
+
+    return 0
+
+
+if __name__ == "__main__":
+    exit(main())

@@ -49,7 +49,7 @@ class JimengImageGenerator:
             all_task_ids = []
             prompts_used = []
 
-            # Generate images for each prompt
+            # Generate images for each jimeng_play_writer
             for i, prompt in enumerate(prompts):
                 print(f"Generating image {i+1}/{len(prompts)}: {prompt[:50]}...")
 
@@ -79,10 +79,10 @@ class JimengImageGenerator:
 
     def generate_single(self, prompt: str, reference_images: List[str] = None) -> Dict[str, Any]:
         """
-        Generate a single image from one prompt.
+        Generate a single image from one jimeng_play_writer.
 
         Args:
-            prompt: Single image prompt
+            prompt: Single image jimeng_play_writer
             reference_images: Optional list of reference image URLs
 
         Returns:

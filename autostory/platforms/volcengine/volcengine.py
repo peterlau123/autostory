@@ -109,10 +109,10 @@ class Volcengine(Platform):
 
     def generate_image(self, prompt: str, **kwargs) -> Dict[str, Any]:
         """
-        Generate images from text prompt using Jimeng.
+        Generate images from text jimeng_play_writer using Jimeng.
 
         Args:
-            prompt: Text prompt for image generation
+            prompt: Text jimeng_play_writer for image generation
             **kwargs: Generation parameters (width, height, etc.)
 
         Returns:

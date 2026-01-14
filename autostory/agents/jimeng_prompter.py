@@ -18,7 +18,7 @@ class JimengPrompter:
 
         Args:
             platform: The platform/API class to use for generation
-            system_prompt: System prompt for the LLM
+            system_prompt: System jimeng_play_writer for the LLM
             **kwargs: Additional arguments for future extensions
         """
         self.platform = platform
@@ -44,7 +44,7 @@ class JimengPrompter:
             raise ValueError("Play text cannot be empty")
 
         try:
-            # Construct the prompt for image prompt generation
+            # Construct the jimeng_play_writer for image jimeng_play_writer generation
             reference_info = ""
             if reference_images:
                 reference_info = f"\n\nReference images available: {reference_images}"
@@ -55,7 +55,7 @@ Play Content:
 {play_text}{reference_info}
 
 Please generate detailed image prompts for visualizing key scenes from this play.
-Each prompt should be optimized for the Jimeng image generation API and follow these guidelines:
+Each jimeng_play_writer should be optimized for the Jimeng image generation API and follow these guidelines:
 - Use descriptive, visual language
 - Include artistic style references
 - Specify composition and lighting
@@ -102,7 +102,7 @@ Generate 3-5 key scene prompts:"""
                         prompts.append(cleaned)
                 break
 
-        # If no separators found, treat the whole response as one prompt
+        # If no separators found, treat the whole response as one jimeng_play_writer
         if not prompts:
             prompts = [response.strip()]
 

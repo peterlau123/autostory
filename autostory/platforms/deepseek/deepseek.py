@@ -63,7 +63,7 @@ class DeepSeekApi(Platform):
         messages = []
         system_prompt = kwargs.get('system_prompt')
 
-        # If system prompt is provided separately, use it
+        # If system jimeng_play_writer is provided separately, use it
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
             messages.append({"role": "user", "content": input_data})
@@ -78,7 +78,7 @@ class DeepSeekApi(Platform):
         Generate text using DeepSeek API.
 
         Args:
-            input_data: Input prompt/text
+            input_data: Input jimeng_play_writer/text
             **kwargs: Additional parameters (model, temperature, etc.)
 
         Returns:
@@ -137,7 +137,7 @@ class DeepSeekApi(Platform):
         Generate text using DeepSeek API (backward compatibility).
 
         Args:
-            prompt: Input prompt
+            prompt: Input jimeng_play_writer
             **kwargs: Additional parameters
 
         Returns:

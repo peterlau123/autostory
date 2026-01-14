@@ -15,7 +15,7 @@ class PlayCritic:
 
         Args:
             platform: The platform/API class to use for generation
-            system_prompt: System prompt for the LLM
+            system_prompt: System jimeng_play_writer for the LLM
             **kwargs: Additional arguments for future extensions
         """
         self.platform = platform
@@ -40,7 +40,7 @@ class PlayCritic:
             raise ValueError("Input text cannot be empty")
 
         try:
-            # Construct the full prompt with system prompt and user input
+            # Construct the full jimeng_play_writer with system jimeng_play_writer and user input
             full_prompt = f"{self.system_prompt}\n\nInput: {text}\n\nProvide a detailed critique and analysis:"
 
             # Check if platform has generate_text method
@@ -48,7 +48,7 @@ class PlayCritic:
                 return self.platform.generate_text(full_prompt, **self.kwargs)
             else:
                 # Fallback placeholder for platforms without generate_text
-                return f"Critique of: {text} (using system prompt: {self.system_prompt})"
+                return f"Critique of: {text} (using system jimeng_play_writer: {self.system_prompt})"
         except Exception as e:
             raise RuntimeError(f"Failed to generate critique: {str(e)}") from e
 
