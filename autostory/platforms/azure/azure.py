@@ -19,9 +19,9 @@ Example usage:
 import argparse
 import os
 import sys
-from typing import Optional
+from typing import Optional, Union
 
-from .. import get_access_config
+from ...platforms.platform import Platform
 
 try:
     AZURE_SDK_AVAILABLE = True
@@ -30,41 +30,70 @@ except ImportError:
     speechsdk = None
 
 
-class AzureVoice:
+class AzureVoice(Platform):
     """
     Azure Speech Synthesis Voice Class
 
     Handles text-to-speech synthesis using Azure Cognitive Services Speech SDK.
     """
 
-    def __init__(self, key: Optional[str] = None, endpoint: Optional[str] = None):
+    def __init__(self, key: Optional[str] = None, endpoint: Optional[str] = None, **kwargs):
         """
         Initialize Azure Voice instance.
 
         Args:
             key: Azure Speech resource key. If None, uses access configuration.
             endpoint: Azure Speech endpoint URL. If None, uses access configuration.
+            **kwargs: Additional initialization parameters
         """
+        super().__init__('azure', **kwargs)
+
         if not AZURE_SDK_AVAILABLE:
             raise ImportError(
                 "Azure Cognitive Services Speech SDK is not installed. "
                 "Install it with: pip install azure-cognitiveservices-speech"
             )
 
-        if key is None or endpoint is None:
-            # Get configuration using the access config system
-            config = get_access_config('azure')
-            self.key = key or config['speech_key']
-            self.endpoint = endpoint or config['endpoint']
-        else:
-            self.key = key
-            self.endpoint = endpoint
+        # Override config values if provided
+        if key is not None:
+            self.config['speech_key'] = key
+        if endpoint is not None:
+            self.config['endpoint'] = endpoint
+
+        self.key = self.get_config_value('speech_key')
+        self.endpoint = self.get_config_value('endpoint')
 
         if not self.key:
             raise ValueError("Azure Speech key is required.")
 
         if not self.endpoint:
             raise ValueError("Azure Speech endpoint is required.")
+
+    def _init_platform(self, **kwargs):
+        """
+        Platform-specific initialization for Azure.
+
+        Args:
+            **kwargs: Platform-specific parameters
+        """
+        # Azure-specific initialization if needed
+        pass
+
+    def generate(self, input_data: str, voice: str = 'en-US-Ava:DragonHDLatestNeural',
+                 output_to_speaker: bool = True, **kwargs) -> bool:
+        """
+        Generate speech from text input.
+
+        Args:
+            input_data: Text to synthesize
+            voice: Voice name for synthesis
+            output_to_speaker: Whether to output to default speaker
+            **kwargs: Additional parameters
+
+        Returns:
+            bool: True if synthesis was successful, False otherwise
+        """
+        return self.synthesize(input_data, voice, output_to_speaker)
 
     def synthesize(
         self,

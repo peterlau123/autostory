@@ -98,7 +98,7 @@ def download_images(image_urls, output_dir=None):
 def main():
     """Main example function demonstrating Volcengine Jimeng text-to-image generation."""
 
-    # Sample prompt in Chinese: "The Jin army is attacking, Northern Song Dynasty Bianjing, crowded with people"
+    # Sample jimeng_play_writer in Chinese: "The Jin army is attacking, Northern Song Dynasty Bianjing, crowded with people"
     prompt = "金军来袭，北宋汴京，人来人往"
 
     # Optional: Reference images (URLs or local file paths)

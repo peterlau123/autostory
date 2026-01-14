@@ -4,43 +4,42 @@ Qwen API integration module.
 This module provides Qwen API integration for language models.
 """
 
-from typing import Optional
-from .. import get_access_config
+from ...platforms.platform import Platform
 
 
-class QwenApi:
+class QwenApi(Platform):
     """
     Qwen API integration class.
     """
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: str = None, **kwargs):
         """
         Initialize Qwen API with access configuration.
 
         Args:
             api_key: Qwen API key. If None, uses access configuration.
+            **kwargs: Additional initialization parameters
         """
-        if api_key is None:
-            config = get_access_config('qwen')
-            self.api_key = config['api_key']
-        else:
-            self.api_key = api_key
+        super().__init__('qwen', **kwargs)
+        if api_key is not None:
+            self.config['api_key'] = api_key
 
-    def get_key(self) -> str:
+    def _init_platform(self, **kwargs):
         """
-        Get the API key for Qwen.
+        Platform-specific initialization for Qwen.
 
-        Returns:
-            str: The API key
+        Args:
+            **kwargs: Platform-specific parameters
         """
-        return self.api_key
+        # Qwen-specific initialization if needed
+        pass
 
-    def generate_text(self, prompt: str, **kwargs) -> str:
+    def generate(self, input_data: str, **kwargs) -> str:
         """
         Generate text using Qwen API.
 
         Args:
-            prompt: Input prompt
+            input_data: Input jimeng_play_writer/text
             **kwargs: Additional parameters
 
         Returns:
@@ -51,4 +50,27 @@ class QwenApi:
             would require the appropriate Qwen SDK or direct API calls.
         """
         # Placeholder - actual implementation would call Qwen API
-        return f"Qwen response to: {prompt}"
+        return f"Qwen response to: {input_data}"
+
+    def get_key(self) -> str:
+        """
+        Get the API key for Qwen.
+
+        Returns:
+            str: The API key
+        """
+        return self.get_config_value('api_key')
+
+    # Backward compatibility method
+    def generate_text(self, prompt: str, **kwargs) -> str:
+        """
+        Generate text using Qwen API (backward compatibility).
+
+        Args:
+            prompt: Input jimeng_play_writer
+            **kwargs: Additional parameters
+
+        Returns:
+            str: Generated text
+        """
+        return self.generate(prompt, **kwargs)
