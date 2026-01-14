@@ -27,6 +27,7 @@ from ..platforms.deepseek import DeepSeekApi
 from ..platforms.volcengine import Volcengine
 
 from utils import PromptReader
+from ..rag_system import StoryRAG
 
 class WorkflowState(TypedDict):
     """State structure for the Jimeng story workflow."""
@@ -67,9 +68,24 @@ class JimengStoryWorkflow:
         self.config = config or {}
         self.max_revisions = self.config.get('max_revisions', 3)
 
+        # RAG configuration
+        self.use_rag = self.config.get('use_rag', False)
+        self.save_to_db = self.config.get('save_to_db', False)
+        self.rag_max_stories = self.config.get('rag_max_stories', 3)
+
         # Initialize platforms
         self.text_platform = DeepSeekApi()
         self.image_platform = Volcengine()
+
+        # Initialize RAG system if needed
+        self.rag_system = None
+        if self.use_rag or self.save_to_db:
+            try:
+                self.rag_system = StoryRAG()
+            except ImportError as e:
+                print(f"Warning: RAG system not available: {e}")
+                self.use_rag = False
+                self.save_to_db = False
 
         # Initialize agents
         self._init_agents()
@@ -110,6 +126,35 @@ class JimengStoryWorkflow:
             self.jimeng_image_generator = None
             self.image_generation_available = False
 
+    def _extract_story_outline(self, full_story: str) -> str:
+        """
+        Extract a concise story outline from the full story text.
+
+        Args:
+            full_story: The complete story text
+
+        Returns:
+            A concise outline/summary of the story
+        """
+        # For now, create a simple outline by taking the first few sentences
+        # and summarizing key elements. In a more advanced implementation,
+        # you could use an LLM to generate a proper outline.
+
+        sentences = full_story.split('.')[:3]  # Take first 3 sentences
+        outline = '.'.join(sentences).strip()
+
+        # If outline is too short, try to extract key narrative elements
+        if len(outline) < 100:
+            # Look for scene descriptions, character names, key events
+            lines = full_story.split('\n')[:5]  # First few lines
+            outline = ' '.join(lines).strip()[:300]  # Limit length
+
+        # Ensure we have a reasonable outline
+        if len(outline) > 500:
+            outline = outline[:500] + "..."
+
+        return outline or "Story outline not available"
+
     def _build_graph(self) -> StateGraph:
         """Build the LangGraph workflow."""
         # Create the graph
@@ -147,7 +192,15 @@ class JimengStoryWorkflow:
     def _write_initial_play(self, state: WorkflowState) -> Dict[str, Any]:
         """Write the initial play from user input."""
         try:
-            play = self.playwriter.generate(state["user_input"])
+            # Prepare prompt with RAG context if enabled
+            prompt = state["user_input"]
+
+            if self.use_rag and self.rag_system:
+                rag_context = self.rag_system.generate_rag_context(prompt, self.rag_max_stories)
+                if rag_context:
+                    prompt = f"{rag_context}\n\nNew Story Request:\n{prompt}"
+
+            play = self.playwriter.generate(prompt)
             return {
                 "current_play": play,
                 "revision_count": 0,
@@ -302,8 +355,8 @@ Please create an improved version addressing the critique points."""
             # Run the workflow
             final_state = self.graph.invoke(initial_state)
 
-            # Return the results
-            return {
+            # Extract results
+            results = {
                 "success": final_state.get("status") == "completed",
                 "play": final_state.get("current_play"),
                 "revisions": final_state.get("revision_count"),
@@ -314,6 +367,30 @@ Please create an improved version addressing the critique points."""
                 "status": final_state.get("status"),
                 "error": final_state.get("error_message")
             }
+
+            # Save to database if enabled and successful
+            if self.save_to_db and self.rag_system and results["success"] and results["play"]:
+                try:
+                    story_outline = self._extract_story_outline(results["play"])
+                    metadata = {
+                        "revisions": results["revisions"],
+                        "critique": results["critique"],
+                        "image_prompts_count": len(results.get("image_prompts", [])),
+                        "images_generated": len(results.get("generated_images", []))
+                    }
+
+                    self.rag_system.add_story(
+                        user_prompt=user_input,
+                        story_outline=story_outline,
+                        full_story=results["play"],
+                        metadata=metadata
+                    )
+                    results["saved_to_db"] = True
+                except Exception as e:
+                    print(f"Warning: Failed to save story to database: {e}")
+                    results["saved_to_db"] = False
+
+            return results
 
         except Exception as e:
             return {
@@ -351,6 +428,7 @@ Examples:
   python jimeng_story.py "Create a play about the Battle of Red Cliffs"
   python jimeng_story.py "Tell a story about ancient Chinese warriors" --images "https://example.com/warrior.jpg"
   python jimeng_story.py "Historical drama" --max-revisions 5
+  python jimeng_story.py "Sequel to previous story" --use-rag --save-to-db --rag-max-stories 5
         """
     )
 
@@ -379,11 +457,33 @@ Examples:
         help="Suppress verbose output"
     )
 
+    parser.add_argument(
+        "--use-rag",
+        action="store_true",
+        help="Enable RAG (Retrieval-Augmented Generation) to use previous stories for context"
+    )
+
+    parser.add_argument(
+        "--save-to-db",
+        action="store_true",
+        help="Save generated stories to the local database for future RAG retrieval"
+    )
+
+    parser.add_argument(
+        "--rag-max-stories",
+        type=int,
+        default=3,
+        help="Maximum number of previous stories to retrieve for RAG context (default: 3)"
+    )
+
     args = parser.parse_args()
 
     # Prepare configuration
     config = {
-        "max_revisions": args.max_revisions
+        "max_revisions": args.max_revisions,
+        "use_rag": args.use_rag,
+        "save_to_db": args.save_to_db,
+        "rag_max_stories": args.rag_max_stories
     }
 
     if not args.quiet:
@@ -392,6 +492,10 @@ Examples:
         print(f"Prompt: {args.user_input}")
         if args.images:
             print(f"Reference Images: {len(args.images)} provided")
+        if args.use_rag:
+            print(f"RAG: Enabled (max {args.rag_max_stories} stories)")
+        if args.save_to_db:
+            print("Database: Will save generated story")
         print()
 
     # Run the workflow
@@ -424,11 +528,16 @@ Examples:
 
             if result["task_ids"]:
                 print(f"📋 Task IDs: {result['task_ids']}")
+
+            if result.get("saved_to_db"):
+                print(f"💾 Story saved to database for future RAG retrieval")
         else:
             # Quiet mode: just print summary
             print(f"Success: Generated play with {result['revisions']} revisions")
             if result["generated_images"]:
                 print(f"Generated {len(result['generated_images'])} images")
+            if result.get("saved_to_db"):
+                print("Story saved to database")
 
     else:
         error_msg = result.get('error', 'Unknown error')

@@ -10,3 +10,6 @@ volcengine-python-sdk
 typer
 rich
 openai
+sentence-transformers
+faiss-cpu
+numpy
