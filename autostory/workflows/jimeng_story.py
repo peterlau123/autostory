@@ -10,8 +10,9 @@ Workflow Steps:
 2. Playcritic reviews and critiques the play
 3. If approved: proceed to image generation
 4. If not approved: Playwriter revises and loop continues
-5. Approved play goes to JimengPrompter for image jimeng_play_writer generation
+5. Approved play goes to JimengPrompter for image generation
 6. Generated prompts go to JimengImageGenerator for final images
+7. Optional: PlayNarrator converts story to narration script for voice-over
 """
 
 from typing import TypedDict, List, Dict, Any, Optional
@@ -23,6 +24,7 @@ from ..agents.playwriter import Playwriter
 from ..agents.playcritic import PlayCritic
 from ..agents.jimeng_prompter import JimengPrompter
 from ..agents.jimeng_image_generator import JimengImageGenerator
+from ..agents.playnarrator import PlayNarrator
 from ..platforms.deepseek import DeepSeekApi
 from ..platforms.volcengine import Volcengine
 
@@ -47,6 +49,9 @@ class WorkflowState(TypedDict):
     generated_images: List[str]
     task_ids: List[str]
 
+    # Narration
+    narration_script: str
+
     # Status and errors
     status: str
     error_message: Optional[str]
@@ -66,6 +71,9 @@ class JimengStoryWorkflow:
         """
         self.config = config or {}
         self.max_revisions = self.config.get('max_revisions', 3)
+
+        # Narration configuration
+        self.generate_narration = self.config.get('generate_narration', False)
 
         # Initialize platforms
         self.text_platform = DeepSeekApi()
@@ -100,6 +108,16 @@ class JimengStoryWorkflow:
             system_prompt=prompter_prompt
         )
 
+        # PlayNarrator agent (only initialize if narration is enabled)
+        if self.generate_narration:
+            narrator_prompt = PromptReader('autostory/prompts/jimeng_play_narration').read()
+            self.play_narrator = PlayNarrator(
+                platform=self.text_platform,
+                system_prompt=narrator_prompt
+            )
+        else:
+            self.play_narrator = None
+
         # Jimeng image generator agent (with error handling for missing volcengine)
         try:
             self.jimeng_image_generator = JimengImageGenerator(
@@ -122,6 +140,10 @@ class JimengStoryWorkflow:
         workflow.add_node("generate_image_prompts", self._generate_image_prompts)
         workflow.add_node("generate_images", self._generate_images)
 
+        # Add narration node if narration is enabled
+        if self.generate_narration:
+            workflow.add_node("generate_narration", self._generate_narration)
+
         # Set entry point
         workflow.set_entry_point("write_initial_play")
 
@@ -140,7 +162,13 @@ class JimengStoryWorkflow:
         )
 
         workflow.add_edge("generate_image_prompts", "generate_images")
-        workflow.add_edge("generate_images", END)
+
+        # Add narration edge if enabled
+        if self.generate_narration:
+            workflow.add_edge("generate_images", "generate_narration")
+            workflow.add_edge("generate_narration", END)
+        else:
+            workflow.add_edge("generate_images", END)
 
         return workflow.compile()
 
@@ -272,6 +300,20 @@ Please create an improved version addressing the critique points."""
                 "status": "error"
             }
 
+    def _generate_narration(self, state: WorkflowState) -> Dict[str, Any]:
+        """Generate narration script from the completed play."""
+        try:
+            narration_script = self.play_narrator.generate(state["current_play"])
+            return {
+                "narration_script": narration_script,
+                "status": "completed"
+            }
+        except Exception as e:
+            return {
+                "error_message": f"Failed to generate narration script: {str(e)}",
+                "status": "error"
+            }
+
     def run(self, user_input: str, reference_images: Optional[List[str]] = None) -> Dict[str, Any]:
         """
         Run the complete workflow.
@@ -303,7 +345,7 @@ Please create an improved version addressing the critique points."""
             final_state = self.graph.invoke(initial_state)
 
             # Return the results
-            return {
+            results = {
                 "success": final_state.get("status") == "completed",
                 "play": final_state.get("current_play"),
                 "revisions": final_state.get("revision_count"),
@@ -314,6 +356,12 @@ Please create an improved version addressing the critique points."""
                 "status": final_state.get("status"),
                 "error": final_state.get("error_message")
             }
+
+            # Add narration if generated
+            if self.generate_narration and final_state.get("narration_script"):
+                results["narration_script"] = final_state.get("narration_script")
+
+            return results
 
         except Exception as e:
             return {
@@ -351,6 +399,7 @@ Examples:
   python jimeng_story.py "Create a play about the Battle of Red Cliffs"
   python jimeng_story.py "Tell a story about ancient Chinese warriors" --images "https://example.com/warrior.jpg"
   python jimeng_story.py "Historical drama" --max-revisions 5
+  python jimeng_story.py "Epic tale" --generate-narration
         """
     )
 
@@ -379,11 +428,18 @@ Examples:
         help="Suppress verbose output"
     )
 
+    parser.add_argument(
+        "--generate-narration", "-n",
+        action="store_true",
+        help="Generate narration script from the completed story for voice-over/broadcasting"
+    )
+
     args = parser.parse_args()
 
     # Prepare configuration
     config = {
-        "max_revisions": args.max_revisions
+        "max_revisions": args.max_revisions,
+        "generate_narration": args.generate_narration
     }
 
     if not args.quiet:
@@ -392,6 +448,8 @@ Examples:
         print(f"Prompt: {args.user_input}")
         if args.images:
             print(f"Reference Images: {len(args.images)} provided")
+        if args.generate_narration:
+            print("Narration: Will generate narration script")
         print()
 
     # Run the workflow
@@ -424,11 +482,19 @@ Examples:
 
             if result["task_ids"]:
                 print(f"📋 Task IDs: {result['task_ids']}")
+
+            if result.get("narration_script"):
+                print(f"🎙️  Narration Script:")
+                print("-" * 40)
+                print(result["narration_script"][:800] + "..." if len(result["narration_script"]) > 800 else result["narration_script"])
+                print()
         else:
             # Quiet mode: just print summary
             print(f"Success: Generated play with {result['revisions']} revisions")
             if result["generated_images"]:
                 print(f"Generated {len(result['generated_images'])} images")
+            if result.get("narration_script"):
+                print("Narration script generated")
 
     else:
         error_msg = result.get('error', 'Unknown error')
