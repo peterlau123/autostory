@@ -43,6 +43,7 @@ class WorkflowState(TypedDict):
     revision_count: int
     max_revisions: int
     approved: bool
+    final_approved_play: str
 
     # Image generation
     image_prompts: List[str]
@@ -73,7 +74,7 @@ class JimengStoryWorkflow:
         self.max_revisions = self.config.get('max_revisions', 3)
 
         # Narration configuration
-        self.generate_narration = self.config.get('generate_narration', False)
+        self.generate_narration = self.config.get('generate_narration', True)
 
         # Initialize platforms
         self.text_platform = DeepSeekApi()
@@ -196,16 +197,25 @@ class JimengStoryWorkflow:
 
 Revision count: {state["revision_count"]}/{self.max_revisions}
 
-Provide your analysis and clearly state APPROVED if the play is ready for image generation, or NEEDS_REVISION if it requires changes."""
+If the play is ready for production and image generation, respond with APPROVED and provide the final polished version of the play.
+If the play needs revision, respond with NEEDS_REVISION and provide specific feedback for improvement."""
 
             critique = self.playcritic.generate(critique_prompt)
 
             # Check if approved
-            approved = "APPROVED" in critique.upper() and "NEEDS_REVISION" not in critique.upper()
+            approved = "APPROVED" in critique.upper()
+
+            # Extract final play if approved
+            final_play = state["current_play"]
+            if approved:
+                # If approved, extract the final polished play from the critique response
+                # The critique should contain the final approved version
+                final_play = critique  # For now, use the full response as the final play
 
             return {
                 "critique_feedback": critique,
                 "approved": approved,
+                "final_play": final_play if approved else state["current_play"],
                 "status": "play_critiqued"
             }
         except Exception as e:
@@ -259,8 +269,10 @@ Please create an improved version addressing the critique points."""
     def _generate_image_prompts(self, state: WorkflowState) -> Dict[str, Any]:
         """Generate image prompts from the approved play."""
         try:
+            # Use final approved play if available, otherwise use current play
+            approved_play = state.get("final_approved_play") or state["current_play"]
             prompts = self.jimeng_prompter.generate(
-                state["current_play"],
+                approved_play,
                 state.get("reference_images")
             )
             return {
@@ -303,7 +315,9 @@ Please create an improved version addressing the critique points."""
     def _generate_narration(self, state: WorkflowState) -> Dict[str, Any]:
         """Generate narration script from the completed play."""
         try:
-            narration_script = self.play_narrator.generate(state["current_play"])
+            # Use final approved play if available, otherwise use current play
+            approved_play = state.get("final_approved_play") or state["current_play"]
+            narration_script = self.play_narrator.generate(approved_play)
             return {
                 "narration_script": narration_script,
                 "status": "completed"
@@ -333,6 +347,7 @@ Please create an improved version addressing the critique points."""
             "revision_count": 0,
             "max_revisions": self.max_revisions,
             "approved": False,
+            "final_approved_play": "",
             "image_prompts": [],
             "generated_images": [],
             "task_ids": [],
@@ -345,9 +360,11 @@ Please create an improved version addressing the critique points."""
             final_state = self.graph.invoke(initial_state)
 
             # Return the results
+            # Use final approved play if available, otherwise use current play
+            final_play = final_state.get("final_approved_play") or final_state.get("current_play")
             results = {
                 "success": final_state.get("status") == "completed",
-                "play": final_state.get("current_play"),
+                "play": final_play,
                 "revisions": final_state.get("revision_count"),
                 "critique": final_state.get("critique_feedback"),
                 "image_prompts": final_state.get("image_prompts"),
@@ -429,9 +446,9 @@ Examples:
     )
 
     parser.add_argument(
-        "--generate-narration", "-n",
+        "--no-narration",
         action="store_true",
-        help="Generate narration script from the completed story for voice-over/broadcasting"
+        help="Disable narration script generation (narration is enabled by default)"
     )
 
     args = parser.parse_args()
@@ -439,7 +456,7 @@ Examples:
     # Prepare configuration
     config = {
         "max_revisions": args.max_revisions,
-        "generate_narration": args.generate_narration
+        "generate_narration": not args.no_narration  # Default to True, False only if --no-narration is specified
     }
 
     if not args.quiet:
@@ -448,8 +465,11 @@ Examples:
         print(f"Prompt: {args.user_input}")
         if args.images:
             print(f"Reference Images: {len(args.images)} provided")
-        if args.generate_narration:
-            print("Narration: Will generate narration script")
+        narration_enabled = not args.no_narration
+        if narration_enabled:
+            print("Narration: Will generate narration script (default)")
+        else:
+            print("Narration: Disabled")
         print()
 
     # Run the workflow
