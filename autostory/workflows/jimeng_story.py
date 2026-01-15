@@ -17,6 +17,9 @@ Workflow Steps:
 
 from typing import TypedDict, List, Dict, Any, Optional
 import argparse
+import os
+import base64
+from urllib.parse import urlparse
 from langgraph.graph import StateGraph, END
 from langchain_core.runnables import RunnableConfig
 
@@ -388,6 +391,59 @@ Please create an improved version addressing the critique points."""
             }
 
 
+def process_image_references(image_paths: List[str]) -> List[str]:
+    """
+    Process image references, converting local files to base64 data URLs.
+
+    Args:
+        image_paths: List of image paths (URLs or local file paths)
+
+    Returns:
+        List of processed image references (URLs or base64 data URLs)
+    """
+    processed_images = []
+
+    for image_path in image_paths:
+        # Check if it's a URL
+        parsed = urlparse(image_path)
+        if parsed.scheme and parsed.netloc:
+            # It's already a URL, use as-is
+            processed_images.append(image_path)
+        else:
+            # It's a local file path
+            if os.path.isfile(image_path):
+                try:
+                    # Read the file and convert to base64
+                    with open(image_path, 'rb') as f:
+                        file_data = f.read()
+
+                    # Get file extension to determine MIME type
+                    _, ext = os.path.splitext(image_path)
+                    ext = ext.lower()
+
+                    mime_type = {
+                        '.jpg': 'image/jpeg',
+                        '.jpeg': 'image/jpeg',
+                        '.png': 'image/png',
+                        '.gif': 'image/gif',
+                        '.webp': 'image/webp'
+                    }.get(ext, 'image/jpeg')  # Default to jpeg
+
+                    # Convert to base64 data URL
+                    base64_data = base64.b64encode(file_data).decode('utf-8')
+                    data_url = f"data:{mime_type};base64,{base64_data}"
+                    processed_images.append(data_url)
+
+                except Exception as e:
+                    print(f"Warning: Failed to process local image file '{image_path}': {e}")
+                    # Skip this file but continue with others
+            else:
+                print(f"Warning: Local image file '{image_path}' not found, skipping")
+                # Skip missing files but continue with others
+
+    return processed_images
+
+
 # Convenience function for easy usage
 def generate_jimeng_story(user_input: str, reference_images: Optional[List[str]] = None,
                          config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -429,7 +485,7 @@ Examples:
         "--images", "-i",
         nargs="*",
         default=[],
-        help="Reference image URLs (can specify multiple)"
+        help="Reference images (URLs or local file paths, can specify multiple)"
     )
 
     parser.add_argument(
@@ -472,8 +528,11 @@ Examples:
             print("Narration: Disabled")
         print()
 
+    # Process image references (convert local files to base64 data URLs)
+    processed_images = process_image_references(args.images)
+
     # Run the workflow
-    result = generate_jimeng_story(args.user_input, args.images, config)
+    result = generate_jimeng_story(args.user_input, processed_images, config)
 
     if result["success"]:
         if not args.quiet:
