@@ -27,9 +27,7 @@ classifiers = [  #! Update me
   "Programming Language :: Python :: 3.9",
 ]
 
-[tool.poetry.scripts]
-# Entry points for the package https://python-poetry.org/docs/pyproject/#scripts
-"autostory" = "autostory.__main__:app"
+
 
 [tool.poetry.dependencies]
 python = "^3.9"

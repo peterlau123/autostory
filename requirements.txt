@@ -9,3 +9,4 @@ volcengine
 volcengine-python-sdk
 typer
 rich
+openai

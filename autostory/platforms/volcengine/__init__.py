@@ -1,3 +1,4 @@
-from .volcengine import VolcengineImageGenerator
+from .volcengine import Volcengine, VolcengineImageGenerator
+from .jimeng import JimengImageGenerator
 
-__all__ = ['VolcengineImageGenerator']
+__all__ = ['Volcengine', 'VolcengineImageGenerator', 'JimengImageGenerator']
